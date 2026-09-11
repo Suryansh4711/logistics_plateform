@@ -3,9 +3,9 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import Icon from "./Icon";
-import { NOTIFICATIONS } from "@/lib/data";
 import type { TabId } from "@/lib/types";
 import { useToast } from "./toast/ToastProvider";
+import { useTelemetrySnapshot } from "@/lib/telemetry-store";
 
 interface HeaderProps {
   onNavigate: (tab: TabId) => void;
@@ -20,9 +20,14 @@ const SEARCH_ROUTES: { keywords: string[]; tab: TabId }[] = [
 
 export default function Header({ onNavigate }: HeaderProps) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState(NOTIFICATIONS);
+  const { notifications } = useTelemetrySnapshot();
+  const [visibleNotifications, setVisibleNotifications] = useState(notifications);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
+
+  useEffect(() => {
+    setVisibleNotifications(notifications);
+  }, [notifications]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -45,7 +50,15 @@ export default function Header({ onNavigate }: HeaderProps) {
   }
 
   function clearNotifications() {
-    setNotifications([]);
+    setVisibleNotifications([]);
+    void Promise.all(
+      visibleNotifications.map((notification) =>
+        fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:4000"}/api/notifications/${notification.id}/read`,
+          { method: "POST" },
+        ),
+      ),
+    );
     showToast("Notifications marked as read");
   }
 
@@ -95,7 +108,7 @@ export default function Header({ onNavigate }: HeaderProps) {
         <div className="flex items-center gap-2 px-3 py-1 bg-white/70 border border-slate-200/70 rounded-full text-xs shadow-2xs">
           <Icon name="satellite_alt" className="text-sm text-apple-blue" />
           <span className="font-mono text-[11px] text-slate-700 font-medium">
-            37°46&apos;N 122°25&apos;W
+            27°19&apos;N 88°36&apos;E
           </span>
           <span className="text-[10px] text-apple-green font-semibold bg-emerald-50 px-1 rounded">
             ±0.4m
@@ -110,7 +123,7 @@ export default function Header({ onNavigate }: HeaderProps) {
           onClick={() => setNotificationsOpen((open) => !open)}
         >
           <Icon name="notifications" className="text-xl" />
-          {notifications.length > 0 && (
+          {visibleNotifications.length > 0 && (
             <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-apple-red" />
           )}
         </button>
@@ -145,7 +158,7 @@ export default function Header({ onNavigate }: HeaderProps) {
           <div className="absolute top-12 right-0 w-80 apple-glass-strong rounded-2xl shadow-popover border border-white p-4 z-50">
             <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
               <span className="text-xs font-bold text-slate-900">
-                Incident Alerts ({notifications.length})
+                Incident Alerts ({visibleNotifications.length})
               </span>
               <button
                 className="text-[11px] text-apple-blue hover:underline"
@@ -155,12 +168,12 @@ export default function Header({ onNavigate }: HeaderProps) {
               </button>
             </div>
             <div className="space-y-2 mt-3">
-              {notifications.length === 0 ? (
+              {visibleNotifications.length === 0 ? (
                 <div className="text-xs text-slate-400 py-3 text-center">
                   All notifications marked as read
                 </div>
               ) : (
-                notifications.map((notification) => (
+                visibleNotifications.map((notification) => (
                   <div
                     key={notification.id}
                     className={`p-2.5 rounded-xl border text-xs flex gap-2.5 items-start ${notification.containerClassName}`}

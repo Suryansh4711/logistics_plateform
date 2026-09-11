@@ -2,6 +2,7 @@
 
 import Icon from "./Icon";
 import { NAV_ITEMS } from "@/lib/data";
+import { useTelemetrySnapshot } from "@/lib/telemetry-store";
 import type { TabId } from "@/lib/types";
 
 interface SidebarProps {
@@ -17,6 +18,8 @@ export default function Sidebar({
   compact,
   onToggleCompact,
 }: SidebarProps) {
+  const snapshot = useTelemetrySnapshot();
+
   return (
     <aside
       className={`fixed left-0 top-16 bottom-0 z-40 apple-glass border-r border-white/60 p-3.5 flex flex-col justify-between transition-all duration-300 ${
@@ -89,27 +92,23 @@ export default function Sidebar({
               </span>
             </div>
             <span className="text-[10px] font-bold text-apple-green">
-              NOMINAL
+              {snapshot.pingMs < 16 ? "NOMINAL" : "WATCH"}
             </span>
           </div>
           <div className="space-y-1.5 pt-1 text-[11px]">
             <div className="flex justify-between text-slate-500">
               <span>Memory</span>
-              <span className="font-mono font-semibold text-slate-700">
-                34%
-              </span>
+              <span className="font-mono font-semibold text-slate-700">{snapshot.memory}%</span>
             </div>
             <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-apple-blue rounded-full w-[34%]" />
+              <div className="h-full bg-apple-blue rounded-full" style={{ width: `${snapshot.memory}%` }} />
             </div>
             <div className="flex justify-between text-slate-500">
               <span>Network</span>
-              <span className="font-mono font-semibold text-slate-700">
-                8.4 MB/s
-              </span>
+              <span className="font-mono font-semibold text-slate-700">{snapshot.throughput} MB/s</span>
             </div>
             <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-apple-green rounded-full w-[62%]" />
+              <div className="h-full bg-apple-green rounded-full" style={{ width: `${Math.min(100, Math.round(Number(snapshot.throughput) * 8))}%` }} />
             </div>
           </div>
         </div>

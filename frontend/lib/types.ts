@@ -47,6 +47,8 @@ export interface ConvoyPin {
   id: string;
   callsign: string;
   role: "lead" | "detour";
+  latitude: number;
+  longitude: number;
   top: number;
   left: number;
   speed: string;
@@ -82,6 +84,8 @@ export interface Hazard {
   title: string;
   corridorName: string;
   coords: string;
+  latitude: number;
+  longitude: number;
   icon: string;
   iconClassName: string;
   description: string;
@@ -94,6 +98,8 @@ export interface FleetUnit {
   callsign: string;
   role: string;
   status: string;
+  latitude: number;
+  longitude: number;
   statusClassName: string;
   speedKmh: string;
   latencyMs: string;
@@ -105,11 +111,14 @@ export interface RouteOption {
   id: string;
   name: string;
   nameClassName: string;
+  latitude: number;
+  longitude: number;
   distanceKm: string;
   time: string;
   timeClassName: string;
   riskLabel: string;
   riskClassName: string;
+  path: [number, number][];
   action: {
     label: string;
     className: string;
