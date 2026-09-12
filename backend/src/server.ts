@@ -27,9 +27,29 @@ import type {
 dotenv.config();
 
 const PORT = Number(process.env.PORT ?? 4000);
-const CORS_ORIGIN = process.env.CORS_ORIGIN ?? true;
+const HOST = process.env.HOST ?? "0.0.0.0";
+
+function parseCorsOrigin(value: string | undefined): boolean | string | string[] {
+  if (!value || value === "*") {
+    return true;
+  }
+
+  const origins = value
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  if (origins.length === 0) {
+    return true;
+  }
+
+  return origins.length === 1 ? origins[0] : origins;
+}
+
+const CORS_ORIGIN = parseCorsOrigin(process.env.CORS_ORIGIN);
 
 const app = express();
+app.set("trust proxy", 1);
 app.use(cors({ origin: CORS_ORIGIN }));
 app.use(express.json());
 
@@ -38,6 +58,7 @@ const io = new Server(httpServer, {
   cors: {
     origin: CORS_ORIGIN,
   },
+  transports: ["websocket", "polling"],
 });
 
 const state = {
@@ -175,6 +196,10 @@ function findFleetUnit(id: string) {
 function findReport(id: string) {
   return state.incidentReports.find((report) => report.id === id);
 }
+
+app.get("/", (_req, res) => {
+  res.json({ ok: true, service: "logistics-platform-backend" });
+});
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true, service: "logistics-platform-backend", timestamp: new Date().toISOString() });
@@ -451,16 +476,20 @@ io.on("connection", (socket) => {
 
 setInterval(updateLiveState, 5000);
 
-pool.query('SELECT NOW()', (err, res) => {
-  if (err) {
-    console.error('❌ Database connection failed:', err.message);
-  } else {
-    // eslint-disable-next-line no-console
-    console.log('✅ Connected to PostgreSQL database at:', res.rows[0].now);
-  }
-});
+if (process.env.DATABASE_URL) {
+  pool.query("SELECT NOW()", (err, res) => {
+    if (err) {
+      console.error("Database connection failed:", err.message);
+    } else {
+      // eslint-disable-next-line no-console
+      console.log("Connected to PostgreSQL database at:", res.rows[0].now);
+    }
+  });
+} else {
+  console.warn("DATABASE_URL is not set; starting without a database connection.");
+}
 
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, HOST, () => {
   // eslint-disable-next-line no-console
-  console.log(`Backend listening on http://localhost:${PORT}`);
+  console.log(`Backend listening on http://${HOST}:${PORT}`);
 });
