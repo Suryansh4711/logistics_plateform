@@ -1,0 +1,355 @@
+import cors from "cors";
+import dotenv from "dotenv";
+import express from "express";
+import { createServer } from "http";
+import { Server } from "socket.io";
+import {
+  seedFleetUnits,
+  seedHazards,
+  seedIncidents,
+  seedKpi,
+  seedNotifications,
+  seedRoutes,
+  seedWeatherStations,
+  recommendRoute,
+} from "./seed";
+import type {
+  FleetUnitRecord,
+  HazardRecord,
+  IncidentReportRecord,
+  KpiSnapshot,
+  LiveSnapshot,
+  NotificationRecord,
+  RouteRecord,
+  WeatherStationRecord,
+} from "./types";
+
+dotenv.config();
+
+const PORT = Number(process.env.PORT ?? 4000);
+const CORS_ORIGIN = process.env.CORS_ORIGIN ?? true;
+
+const app = express();
+app.use(cors({ origin: CORS_ORIGIN }));
+app.use(express.json());
+
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: CORS_ORIGIN,
+  },
+});
+
+const state = {
+  hazards: [...seedHazards],
+  fleetUnits: [...seedFleetUnits],
+  routes: [...seedRoutes],
+  weatherStations: [...seedWeatherStations],
+  incidentReports: [...seedIncidents],
+  notifications: [...seedNotifications],
+  kpi: { ...seedKpi },
+};
+
+function toSnapshot(): LiveSnapshot {
+  return {
+    hazards: state.hazards,
+    fleetUnits: state.fleetUnits,
+    routes: state.routes,
+    weatherStations: state.weatherStations,
+    incidentReports: state.incidentReports,
+    notifications: state.notifications,
+    kpi: state.kpi,
+  };
+}
+
+function emitSnapshot() {
+  io.emit("telemetry:update", toSnapshot());
+  io.emit("hazards:update", state.hazards);
+  io.emit("fleet:update", state.fleetUnits);
+  io.emit("routes:update", state.routes);
+  io.emit("weather:update", state.weatherStations);
+  io.emit("reports:update", state.incidentReports);
+  io.emit("notifications:update", state.notifications);
+  io.emit("kpis:update", state.kpi);
+}
+
+function makeGeoPoint(latitude: number, longitude: number) {
+  return { type: "Point" as const, coordinates: [longitude, latitude] as [number, number] };
+}
+
+function toRouteGeometry(route: RouteRecord) {
+  return {
+    ...route,
+    geometry: {
+      type: "LineString" as const,
+      coordinates: route.geometry.coordinates,
+    },
+  };
+}
+
+function updateLiveState() {
+  const now = new Date().toISOString();
+
+  state.kpi = {
+    ...state.kpi,
+    telemetryPingMs: 12 + Math.round(Math.random() * 8),
+    networkMbps: Number((7.8 + Math.random() * 1.7).toFixed(1)),
+    memoryPercent: Math.max(22, Math.min(58, state.kpi.memoryPercent + (Math.random() > 0.5 ? 1 : -1))),
+    updatedAt: now,
+  };
+
+  state.fleetUnits = state.fleetUnits.map((unit, index) => {
+    const headingDelta = index % 2 === 0 ? 1 : -1;
+    const speedDrift = (Math.random() - 0.5) * 4;
+    const latitudeDrift = (Math.random() - 0.5) * 0.002;
+    const longitudeDrift = (Math.random() - 0.5) * 0.002;
+
+    return {
+      ...unit,
+      latitude: Number((unit.latitude + latitudeDrift).toFixed(6)),
+      longitude: Number((unit.longitude + longitudeDrift).toFixed(6)),
+      speedKmh: Number(Math.max(0, unit.speedKmh + speedDrift).toFixed(1)),
+      latencyMs: Math.max(8, unit.latencyMs + (Math.random() > 0.5 ? 1 : -1)),
+      fuelPercent: Math.max(0, Math.min(100, unit.fuelPercent - (Math.random() > 0.9 ? 1 : 0))),
+      headingDeg: (unit.headingDeg + headingDelta + 360) % 360,
+      updatedAt: now,
+    };
+  });
+
+  state.hazards = state.hazards.map((hazard) => ({
+    ...hazard,
+    status: hazard.status === "open" && Math.random() > 0.92 ? "isolated" : hazard.status,
+    updatedAt: now,
+  }));
+
+  state.weatherStations = state.weatherStations.map((station, index) => {
+    const updatedMetrics = station.metrics.map((metric) => {
+      if (metric.label === "Temperature") {
+        const base = Number(metric.value.replace(/[^0-9.-]/g, ""));
+        return { ...metric, value: `${(base + (Math.random() - 0.5) * 0.4).toFixed(1)}°C` };
+      }
+
+      if (metric.label === "Wind Speed") {
+        const base = Number(metric.value.replace(/[^0-9.-]/g, ""));
+        return { ...metric, value: `${Math.max(0, Math.round(base + (Math.random() > 0.5 ? 1 : -1)))} km/h` };
+      }
+
+      if (metric.label === "Pressure") {
+        const base = Number(metric.value.replace(/[^0-9.-]/g, ""));
+        return { ...metric, value: `${Math.round(base + (index % 2 === 0 ? 1 : -1))} hPa` };
+      }
+
+      return metric;
+    });
+
+    return {
+      ...station,
+      metrics: updatedMetrics,
+      updatedAt: now,
+    };
+  });
+
+  state.notifications = [
+    {
+      id: `note-${Date.now()}`,
+      title: "Telemetry refresh",
+      description: "Live fleet and weather data were refreshed from the command service.",
+      severity: "info",
+      createdAt: now,
+      readAt: null,
+    },
+    ...state.notifications,
+  ].slice(0, 10);
+
+  emitSnapshot();
+}
+
+function findHazard(id: string) {
+  return state.hazards.find((hazard) => hazard.id === id);
+}
+
+function findFleetUnit(id: string) {
+  return state.fleetUnits.find((unit) => unit.id === id);
+}
+
+function findReport(id: string) {
+  return state.incidentReports.find((report) => report.id === id);
+}
+
+app.get("/health", (_req, res) => {
+  res.json({ ok: true, service: "logistics-platform-backend", timestamp: new Date().toISOString() });
+});
+
+app.get("/api/snapshot", (_req, res) => {
+  res.json(toSnapshot());
+});
+
+app.get("/api/hazards", (_req, res) => {
+  res.json(state.hazards);
+});
+
+app.get("/api/fleet", (_req, res) => {
+  res.json(state.fleetUnits);
+});
+
+app.get("/api/routes", (_req, res) => {
+  res.json(state.routes.map(toRouteGeometry));
+});
+
+app.get("/api/weather", (_req, res) => {
+  res.json(state.weatherStations);
+});
+
+app.get("/api/reports", (_req, res) => {
+  res.json(state.incidentReports);
+});
+
+app.get("/api/notifications", (_req, res) => {
+  res.json(state.notifications);
+});
+
+app.get("/api/kpis", (_req, res) => {
+  res.json(state.kpi);
+});
+
+app.post("/api/routes/recommend", (req, res) => {
+  const recommendation = recommendRoute();
+  const origin = typeof req.body?.origin === "string" ? req.body.origin : "unknown";
+
+  res.json({
+    ...recommendation,
+    origin,
+  });
+});
+
+app.patch("/api/hazards/:id", (req, res) => {
+  const hazard = findHazard(req.params.id);
+  if (!hazard) {
+    return res.status(404).json({ error: "Hazard not found" });
+  }
+
+  const updated: HazardRecord = {
+    ...hazard,
+    status: req.body?.status ?? hazard.status,
+    radiusMeters: Number(req.body?.radiusMeters ?? hazard.radiusMeters),
+    updatedAt: new Date().toISOString(),
+    geometry: makeGeoPoint(hazard.latitude, hazard.longitude),
+  };
+
+  state.hazards = state.hazards.map((item) => (item.id === hazard.id ? updated : item));
+  emitSnapshot();
+  return res.json(updated);
+});
+
+app.patch("/api/fleet/:id", (req, res) => {
+  const unit = findFleetUnit(req.params.id);
+  if (!unit) {
+    return res.status(404).json({ error: "Fleet unit not found" });
+  }
+
+  const updated: FleetUnitRecord = {
+    ...unit,
+    status: req.body?.status ?? unit.status,
+    latitude: Number(req.body?.latitude ?? unit.latitude),
+    longitude: Number(req.body?.longitude ?? unit.longitude),
+    speedKmh: Number(req.body?.speedKmh ?? unit.speedKmh),
+    latencyMs: Number(req.body?.latencyMs ?? unit.latencyMs),
+    fuelPercent: Number(req.body?.fuelPercent ?? unit.fuelPercent),
+    headingDeg: Number(req.body?.headingDeg ?? unit.headingDeg),
+    updatedAt: new Date().toISOString(),
+  };
+
+  state.fleetUnits = state.fleetUnits.map((item) => (item.id === unit.id ? updated : item));
+  emitSnapshot();
+  return res.json(updated);
+});
+
+app.post("/api/fleet/:id/ping", (req, res) => {
+  const unit = findFleetUnit(req.params.id);
+  if (!unit) {
+    return res.status(404).json({ error: "Fleet unit not found" });
+  }
+
+  const updated = {
+    ...unit,
+    latencyMs: Math.max(6, unit.latencyMs - 1),
+    updatedAt: new Date().toISOString(),
+  };
+
+  state.fleetUnits = state.fleetUnits.map((item) => (item.id === unit.id ? updated : item));
+  emitSnapshot();
+  return res.json(updated);
+});
+
+app.patch("/api/reports/:id", (req, res) => {
+  const report = findReport(req.params.id);
+  if (!report) {
+    return res.status(404).json({ error: "Report not found" });
+  }
+
+  const updated: IncidentReportRecord = {
+    ...report,
+    status: req.body?.status ?? report.status,
+    updatedAt: new Date().toISOString(),
+  };
+
+  state.incidentReports = state.incidentReports.map((item) => (item.id === report.id ? updated : item));
+  emitSnapshot();
+  return res.json(updated);
+});
+
+app.post("/api/reports/:id/dispatch", (req, res) => {
+  const report = findReport(req.params.id);
+  if (!report) {
+    return res.status(404).json({ error: "Report not found" });
+  }
+
+  const updated: IncidentReportRecord = {
+    ...report,
+    status: "Dispatched",
+    updatedAt: new Date().toISOString(),
+  };
+
+  state.incidentReports = state.incidentReports.map((item) => (item.id === report.id ? updated : item));
+  state.notifications = [
+    {
+      id: `note-${Date.now()}`,
+      title: `Dispatch action executed for ${report.reportId}`,
+      description: `The report was handed off to the field team from ${report.location}.`,
+      severity: "info",
+      createdAt: new Date().toISOString(),
+      readAt: null,
+    },
+    ...state.notifications,
+  ].slice(0, 10);
+  emitSnapshot();
+  return res.json(updated);
+});
+
+app.post("/api/notifications/:id/read", (req, res) => {
+  const notification = state.notifications.find((item) => item.id === req.params.id);
+  if (!notification) {
+    return res.status(404).json({ error: "Notification not found" });
+  }
+
+  const updated = { ...notification, readAt: new Date().toISOString() };
+  state.notifications = state.notifications.map((item) => (item.id === notification.id ? updated : item));
+  emitSnapshot();
+  return res.json(updated);
+});
+
+app.post("/api/telemetry/broadcast", (_req, res) => {
+  updateLiveState();
+  res.json({ ok: true });
+});
+
+io.on("connection", (socket) => {
+  socket.emit("telemetry:update", toSnapshot());
+});
+
+setInterval(updateLiveState, 5000);
+
+httpServer.listen(PORT, () => {
+  // eslint-disable-next-line no-console
+  console.log(`Backend listening on http://localhost:${PORT}`);
+});
