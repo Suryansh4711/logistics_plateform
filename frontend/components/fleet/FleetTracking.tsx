@@ -24,7 +24,7 @@ export default function FleetTracking() {
 
         <div className="mt-6 grid gap-4 xl:grid-cols-3">
           {units.map((unit) => (
-            <div key={unit.id} className="rounded-2xl border border-slate-200/70 bg-white/80 p-5 shadow-sm">
+            <div key={unit.id} className="apple-glass-card rounded-2xl p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-900">{unit.callsign}</p>

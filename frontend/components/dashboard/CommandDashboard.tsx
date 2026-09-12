@@ -30,15 +30,15 @@ export default function CommandDashboard({ onNavigate }: CommandDashboardProps) 
                 time.
               </p>
             </div>
-            <div className="rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-3 text-right shadow-sm">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+            <div className="min-w-[168px] rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-2.5 text-right shadow-sm">
+              <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                 Last sync
               </div>
-              <div className="mt-1 text-sm font-semibold text-slate-900">
+              <div className="mt-1 text-xs font-semibold leading-tight text-slate-900">
                 {snapshot.utcTime} UTC
               </div>
-              <div className="text-xs text-slate-500">{snapshot.localTime}</div>
-              <div className={`mt-2 text-[10px] font-bold uppercase tracking-[0.2em] ${snapshot.backendConnected ? "text-apple-green" : "text-apple-orange"}`}>
+              <div className="mt-0.5 text-[11px] leading-tight text-slate-500">{snapshot.localTime}</div>
+              <div className={`mt-1.5 text-[9px] font-bold uppercase tracking-[0.16em] ${snapshot.backendConnected ? "text-apple-green" : "text-apple-orange"}`}>
                 {snapshot.backendConnected ? "Backend online" : "Fallback mode"}
               </div>
             </div>
@@ -67,21 +67,21 @@ export default function CommandDashboard({ onNavigate }: CommandDashboardProps) 
               {
                 label: "Telemetry ping",
                 value: `${snapshot.pingMs} ms`,
-                hint: `${snapshot.throughput} MB/s`,
+                hint: snapshot.throughput,
                 tone: "text-apple-orange",
               },
             ].map((card) => (
               <div
                 key={card.label}
-                className="rounded-2xl border border-slate-200/70 bg-white/85 p-4 shadow-sm"
+                className="apple-glass-card rounded-2xl p-4"
               >
-                <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                   {card.label}
                 </div>
-                <div className={`mt-2 text-2xl font-bold ${card.tone}`}>
+                <div className={`mt-2 text-xl font-bold leading-none ${card.tone}`}>
                   {card.value}
                 </div>
-                <div className="mt-1 text-xs text-slate-500">{card.hint}</div>
+                <div className="mt-1.5 text-[11px] text-slate-500">{card.hint}</div>
               </div>
             ))}
           </div>

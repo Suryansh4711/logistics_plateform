@@ -21,13 +21,13 @@ const SEARCH_ROUTES: { keywords: string[]; tab: TabId }[] = [
 export default function Header({ onNavigate }: HeaderProps) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { notifications } = useTelemetrySnapshot();
-  const [visibleNotifications, setVisibleNotifications] = useState(notifications);
+  const [dismissedNotificationIds, setDismissedNotificationIds] = useState<string[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
 
-  useEffect(() => {
-    setVisibleNotifications(notifications);
-  }, [notifications]);
+  const visibleNotifications = notifications.filter(
+    (notification) => !dismissedNotificationIds.includes(notification.id),
+  );
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -50,7 +50,9 @@ export default function Header({ onNavigate }: HeaderProps) {
   }
 
   function clearNotifications() {
-    setVisibleNotifications([]);
+    setDismissedNotificationIds((current) => [
+      ...new Set([...current, ...visibleNotifications.map((notification) => notification.id)]),
+    ]);
     void Promise.all(
       visibleNotifications.map((notification) =>
         fetch(

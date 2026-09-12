@@ -49,7 +49,7 @@ export default function Sidebar({
               <button
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
-                className={`nav-item flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-xs text-left ${
+                className={`nav-item flex items-center justify-between px-3 py-2.5 rounded-xl transition-[background-color,box-shadow,color,transform] duration-300 ease-out text-xs text-left ${
                   compact ? "justify-center px-0" : ""
                 } ${
                   isActive
@@ -105,10 +105,10 @@ export default function Sidebar({
             </div>
             <div className="flex justify-between text-slate-500">
               <span>Network</span>
-              <span className="font-mono font-semibold text-slate-700">{snapshot.throughput} MB/s</span>
+              <span className="font-mono font-semibold text-slate-700">{snapshot.throughput}</span>
             </div>
             <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-apple-green rounded-full" style={{ width: `${Math.min(100, Math.round(Number(snapshot.throughput) * 8))}%` }} />
+              <div className="h-full bg-apple-green rounded-full" style={{ width: `${Math.min(100, Math.round(Number.parseFloat(snapshot.throughput) * 8))}%` }} />
             </div>
           </div>
         </div>

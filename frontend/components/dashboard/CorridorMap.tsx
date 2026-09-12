@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, type PointerEvent } from "react";
 import {
   divIcon,
   type DivIcon,
@@ -48,14 +48,49 @@ function routeColor(routeId: string) {
 
 export default function CorridorMap() {
   const { hazards, fleetUnits, routes } = useTelemetrySnapshot();
+  const mapRef = useRef<HTMLDivElement>(null);
+  const layerPanelRef = useRef<HTMLDivElement>(null);
   const [layersVisible, setLayersVisible] = useState<Record<LayerId, boolean>>({
     hazards: true,
     fleet: true,
     routes: true,
   });
+  const [layerPanelPosition, setLayerPanelPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isDraggingLayers, setIsDraggingLayers] = useState(false);
+
+  function handleLayerPanelPointerDown(event: PointerEvent<HTMLDivElement>) {
+    const map = mapRef.current;
+    const panel = layerPanelRef.current;
+    if (!map || !panel) return;
+
+    const mapBounds = map.getBoundingClientRect();
+    const panelBounds = panel.getBoundingClientRect();
+    const offsetX = event.clientX - panelBounds.left;
+    const offsetY = event.clientY - panelBounds.top;
+
+    setIsDraggingLayers(true);
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    function movePanel(moveEvent: globalThis.PointerEvent) {
+      const maxX = mapBounds.width - panelBounds.width;
+      const maxY = mapBounds.height - panelBounds.height;
+      const x = Math.min(maxX, Math.max(0, moveEvent.clientX - mapBounds.left - offsetX));
+      const y = Math.min(maxY, Math.max(0, moveEvent.clientY - mapBounds.top - offsetY));
+      setLayerPanelPosition({ x, y });
+    }
+
+    function stopMoving() {
+      setIsDraggingLayers(false);
+      window.removeEventListener("pointermove", movePanel);
+      window.removeEventListener("pointerup", stopMoving);
+    }
+
+    window.addEventListener("pointermove", movePanel);
+    window.addEventListener("pointerup", stopMoving, { once: true });
+  }
 
   return (
-    <div className="relative h-[560px] w-full overflow-hidden rounded-3xl border border-white shadow-apple-card">
+    <div ref={mapRef} className="relative h-[560px] w-full overflow-hidden rounded-3xl border border-white shadow-apple-card">
       <MapContainer
         center={DEFAULT_CENTER}
         className="h-full w-full"
@@ -117,21 +152,29 @@ export default function CorridorMap() {
           ))}
       </MapContainer>
 
-      <div className="absolute left-4 top-4 z-[1000] w-56 rounded-2xl border border-white/90 bg-white/90 p-3 shadow-popover backdrop-blur">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-2 text-xs font-semibold text-slate-800">
+      <div
+        ref={layerPanelRef}
+        className={`${layerPanelPosition ? "absolute left-0 top-0" : "absolute bottom-4 right-4"} apple-glass z-[1000] w-36 rounded-2xl border border-white/75 p-1.5 shadow-[0_14px_35px_rgba(15,23,42,0.16),0_2px_8px_rgba(15,23,42,0.08)] backdrop-blur-xl`}
+        style={layerPanelPosition ? { left: layerPanelPosition.x, top: layerPanelPosition.y } : undefined}
+      >
+        <div
+          className={`flex touch-none cursor-move items-center justify-between border-b border-slate-100 pb-1.5 text-[10px] font-semibold text-slate-800 ${isDraggingLayers ? "cursor-grabbing" : ""}`}
+          onPointerDown={handleLayerPanelPointerDown}
+          title="Drag layers panel"
+        >
           <span className="flex items-center gap-1.5">
-            <Icon name="layers" className="text-apple-blue text-sm" /> Layers
+            <Icon name="layers" className="text-apple-blue text-xs" /> Layers
           </span>
-          <span className="text-[10px] font-bold text-apple-blue">Live</span>
+          <span className="text-[9px] font-bold text-apple-blue">Live</span>
         </div>
-        <div className="mt-2 space-y-1 text-xs">
+        <div className="mt-1 space-y-0.5 text-[10px]">
           {MAP_LAYERS.map((layer) => {
             const id = layer.id as LayerId;
             const active = layersVisible[id];
             return (
               <button
                 key={layer.id}
-                className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2 font-medium transition-colors ${
+                className={`flex w-full items-center justify-between rounded-md px-1.5 py-1 font-medium transition-colors ${
                   active ? "bg-slate-100 text-slate-900" : "bg-slate-50 text-slate-400"
                 }`}
                 onClick={() =>
@@ -142,7 +185,7 @@ export default function CorridorMap() {
                   <span className={`h-2 w-2 rounded-full ${layer.dotClassName}`} />
                   {layer.label}
                 </span>
-                <span className="text-[10px] uppercase tracking-wider">
+                  <span className="text-[8px] uppercase tracking-wider">
                   {active ? "On" : "Off"}
                 </span>
               </button>

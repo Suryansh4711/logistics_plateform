@@ -24,7 +24,7 @@ export default function ActiveHazards() {
 
         <div className="mt-6 grid gap-4 xl:grid-cols-2">
           {hazards.map((hazard) => (
-            <div key={hazard.id} className="rounded-2xl border border-slate-200/70 bg-white/80 p-5 shadow-sm">
+            <div key={hazard.id} className="apple-glass-card rounded-2xl p-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${hazard.severityClassName}`}>

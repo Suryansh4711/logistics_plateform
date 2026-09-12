@@ -24,7 +24,7 @@ export default function IncidentReports() {
 
         <div className="mt-6 space-y-4">
           {reports.map((report) => (
-            <div key={report.id} className="rounded-2xl border border-slate-200/70 bg-white/80 p-5 shadow-sm">
+            <div key={report.id} className="apple-glass-card rounded-2xl p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-900">{report.reportId}</p>
