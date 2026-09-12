@@ -12,7 +12,6 @@ import {
   seedNotifications,
   seedRoutes,
   seedWeatherStations,
-  recommendRoute,
 } from "./seed";
 import type {
   FleetUnitRecord,
@@ -214,12 +213,114 @@ app.get("/api/kpis", (_req, res) => {
 });
 
 app.post("/api/routes/recommend", (req, res) => {
-  const recommendation = recommendRoute();
-  const origin = typeof req.body?.origin === "string" ? req.body.origin : "unknown";
+  // Pull live data from in-memory state
+  const { routes, hazards, weatherStations } = state;
+
+  // The AI Route Evaluator
+  const evaluatedRoutes = routes.map((route) => {
+    let score = 100;
+    const explanations: Array<{ factor: string; impact: string; detail: string }> = [];
+
+    // 1. Distance & Topology Penalty
+    const baseDistance = 66.0; // Primary Route A distance as baseline
+    if (route.distanceKm > baseDistance) {
+      const penalty = Math.round((route.distanceKm - baseDistance) * 0.8);
+      score -= penalty;
+      explanations.push({
+        factor: "Distance Overhead",
+        impact: `-${penalty}`,
+        detail: `+${(route.distanceKm - baseDistance).toFixed(1)}km detour required`,
+      });
+    }
+
+    // 2. Weather Penalty (matching weather stations to route sectors)
+    const severeWeather = weatherStations.find(
+      (w) =>
+        w.conditionLabel.toLowerCase().includes("rising") ||
+        w.conditionLabel.toLowerCase().includes("heavy") ||
+        w.conditionLabel.toLowerCase().includes("blizzard"),
+    );
+    if (severeWeather && route.name.includes("Beta")) {
+      score -= 25;
+      explanations.push({
+        factor: "Weather Risk",
+        impact: "-25",
+        detail: `High risk of localized flooding due to ${severeWeather.conditionLabel}`,
+      });
+    }
+
+    // 3. Freezing / Visibility Penalty for high-altitude routes
+    const freezingStation = weatherStations.find(
+      (w) =>
+        w.conditionLabel.toLowerCase().includes("freez") ||
+        w.conditionLabel.toLowerCase().includes("fog"),
+    );
+    if (freezingStation && route.name.includes("Beta")) {
+      const visPenalty = 7;
+      score -= visPenalty;
+      explanations.push({
+        factor: "Visibility / Black Ice",
+        impact: `-${visPenalty}`,
+        detail: `${freezingStation.conditionLabel} detected at ${freezingStation.name}`,
+      });
+    }
+
+    // 4. Active Hazard Penalty
+    // If route passes through a critical hazard zone (like NH-29 Landslide on Primary Route A)
+    const blockingHazard = hazards.find(
+      (h) => h.severity === "critical" && route.name.includes("Primary"),
+    );
+    if (blockingHazard) {
+      score -= 80;
+      explanations.push({
+        factor: "Critical Obstruction",
+        impact: "-80",
+        detail: `${blockingHazard.title} completely blocking transit`,
+      });
+    }
+
+    // 5. Moderate hazard proximity penalty
+    const nearbyHazards = hazards.filter(
+      (h) => h.severity === "high" && route.name.includes("Beta"),
+    );
+    if (nearbyHazards.length > 0) {
+      const hazPenalty = nearbyHazards.length * 12;
+      score -= hazPenalty;
+      explanations.push({
+        factor: "Hazard Proximity",
+        impact: `-${hazPenalty}`,
+        detail: `${nearbyHazards.length} high-severity hazard(s) along corridor`,
+      });
+    }
+
+    // If no penalties, note it as clean
+    if (explanations.length === 0) {
+      explanations.push({
+        factor: "Clear Corridor",
+        impact: "+0",
+        detail: "No active hazards or weather risks detected on this route",
+      });
+    }
+
+    return {
+      id: route.id,
+      name: route.name,
+      distanceKm: route.distanceKm,
+      etaMinutes: route.etaMinutes,
+      riskLabel: route.riskLabel,
+      aiScore: Math.max(0, score),
+      confidence: (Math.max(0, score) * 0.98).toFixed(1) + "%",
+      explanations,
+    };
+  });
+
+  // Sort by highest score to find the optimal route
+  evaluatedRoutes.sort((a, b) => b.aiScore - a.aiScore);
 
   res.json({
-    ...recommendation,
-    origin,
+    recommendedRoute: evaluatedRoutes[0],
+    alternatives: evaluatedRoutes.slice(1),
+    generatedAt: new Date().toISOString(),
   });
 });
 

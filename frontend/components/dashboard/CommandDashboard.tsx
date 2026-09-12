@@ -10,9 +10,27 @@ interface CommandDashboardProps {
   onNavigate: (tab: TabId) => void;
 }
 
+interface AiExplanation {
+  factor: string;
+  impact: string;
+  detail: string;
+}
+
+interface AiRoute {
+  id: string;
+  name: string;
+  distanceKm: number;
+  etaMinutes: number;
+  riskLabel: string;
+  aiScore: number;
+  confidence: string;
+  explanations: AiExplanation[];
+}
+
 export default function CommandDashboard({ onNavigate }: CommandDashboardProps) {
   const snapshot = useTelemetrySnapshot();
   const [liveData, setLiveData] = useState<any>(null);
+  const [aiRecommendation, setAiRecommendation] = useState<AiRoute | null>(null);
 
   useEffect(() => {
     // 1. Grab initial state immediately
@@ -27,6 +45,16 @@ export default function CommandDashboard({ onNavigate }: CommandDashboardProps) 
       socket.off("telemetry:update");
     };
   }, []);
+
+  // Re-run the AI scoring whenever telemetry updates
+  useEffect(() => {
+    if (!liveData) return;
+
+    fetch("http://localhost:4000/api/routes/recommend", { method: "POST" })
+      .then((res) => res.json())
+      .then((data) => setAiRecommendation(data.recommendedRoute))
+      .catch(console.error);
+  }, [liveData]);
 
   if (!liveData) {
     return (
@@ -138,6 +166,69 @@ export default function CommandDashboard({ onNavigate }: CommandDashboardProps) 
         </div>
 
         <div className="space-y-4">
+          {/* AI Logistics Intelligence Card */}
+          {aiRecommendation && (
+            <div className="apple-glass rounded-3xl p-6 shadow-apple-card border border-emerald-200/50 overflow-hidden relative">
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-apple-green via-apple-blue to-apple-purple" />
+              <div className="flex items-center gap-2 mb-4">
+                <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-apple-green text-white shadow-sm">
+                  <span className="material-symbols-outlined text-[16px]">psychology</span>
+                </span>
+                <p className="text-xs font-semibold uppercase tracking-wider text-apple-green">
+                  AI Logistics Intelligence
+                </p>
+              </div>
+
+              <h3 className="text-lg font-bold text-slate-900 mb-1">
+                AI Optimal Route: {aiRecommendation.name}
+              </h3>
+
+              <div className="flex items-center gap-4 mb-5">
+                <span className="text-3xl font-bold text-apple-green">
+                  {aiRecommendation.aiScore}<span className="text-lg text-slate-400">/100</span>
+                </span>
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-slate-500">
+                    Confidence: {aiRecommendation.confidence}
+                  </span>
+                  <span className="text-[10px] text-slate-400">
+                    {aiRecommendation.distanceKm} km · {aiRecommendation.riskLabel}
+                  </span>
+                </div>
+              </div>
+
+              {/* Score bar */}
+              <div className="mb-5 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-apple-green to-apple-blue transition-all duration-700"
+                  style={{ width: `${aiRecommendation.aiScore}%` }}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400 mb-2">
+                  XAI Decision Breakdown
+                </p>
+                {aiRecommendation.explanations.map((exp, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between rounded-xl bg-slate-900/90 px-3 py-2.5 backdrop-blur-sm"
+                  >
+                    <span className="text-sm font-medium text-white">{exp.factor}</span>
+                    <div className="flex items-center gap-3 text-right">
+                      <span className={`text-sm font-bold ${exp.impact.startsWith("-") ? "text-apple-red" : "text-apple-green"}`}>
+                        {exp.impact}
+                      </span>
+                      <span className="text-[11px] text-slate-400 max-w-[180px] text-right leading-tight">
+                        {exp.detail}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="apple-glass rounded-3xl p-6 shadow-apple-card border border-white">
             <p className="text-xs font-semibold uppercase tracking-wider text-apple-blue">
               Live readout
@@ -203,4 +294,5 @@ export default function CommandDashboard({ onNavigate }: CommandDashboardProps) 
     </section>
   );
 }
+
 
