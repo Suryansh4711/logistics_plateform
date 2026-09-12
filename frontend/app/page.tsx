@@ -49,18 +49,18 @@ export default function Home() {
         >
           <main className="p-6 lg:p-8 max-w-[1680px] mx-auto">
             {activeTab === "dashboard" && (
-              <div className="mb-6 overflow-hidden rounded-[2rem] border border-white/80 bg-white/75 px-6 py-5 shadow-apple-card backdrop-blur-sm">
+              <div className="mb-4 overflow-hidden rounded-3xl border border-white/80 bg-white/75 px-5 py-3.5 shadow-apple-card backdrop-blur-sm">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-apple-blue">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.3em] text-apple-blue">
                       AegisOps Command Center
                     </p>
-                    <h2 className="mt-2 text-2xl lg:text-3xl font-black tracking-tight text-slate-900">
+                    <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
                       Real-time GIS tactical HUD for corridor operations.
                     </h2>
                   </div>
-                  <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">
-                    <span className="h-2.5 w-2.5 rounded-full bg-apple-green animate-pulse" />
+                  <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1.5 text-xs font-semibold text-emerald-700">
+                    <span className="h-2 w-2 rounded-full bg-apple-green animate-pulse" />
                     Backend live sync active
                   </div>
                 </div>

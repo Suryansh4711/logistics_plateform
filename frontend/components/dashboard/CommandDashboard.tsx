@@ -21,7 +21,7 @@ export default function CommandDashboard({ onNavigate }: CommandDashboardProps) 
               <p className="text-xs font-semibold uppercase tracking-wider text-apple-blue">
                 Command Dashboard
               </p>
-              <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
+              <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
                 Live convoy operations are now online.
               </h1>
               <p className="mt-3 max-w-2xl text-sm text-slate-600">
@@ -30,15 +30,15 @@ export default function CommandDashboard({ onNavigate }: CommandDashboardProps) 
                 time.
               </p>
             </div>
-            <div className="min-w-[168px] rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-2.5 text-right shadow-sm">
-              <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+            <div className="rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-3 text-right shadow-sm">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                 Last sync
               </div>
-              <div className="mt-1 text-xs font-semibold leading-tight text-slate-900">
+              <div className="mt-1 text-sm font-semibold text-slate-900">
                 {snapshot.utcTime} UTC
               </div>
-              <div className="mt-0.5 text-[11px] leading-tight text-slate-500">{snapshot.localTime}</div>
-              <div className={`mt-1.5 text-[9px] font-bold uppercase tracking-[0.16em] ${snapshot.backendConnected ? "text-apple-green" : "text-apple-orange"}`}>
+              <div className="text-xs text-slate-500">{snapshot.localTime}</div>
+              <div className={`mt-2 text-[10px] font-bold uppercase tracking-[0.2em] ${snapshot.backendConnected ? "text-apple-green" : "text-apple-orange"}`}>
                 {snapshot.backendConnected ? "Backend online" : "Fallback mode"}
               </div>
             </div>
@@ -75,13 +75,13 @@ export default function CommandDashboard({ onNavigate }: CommandDashboardProps) 
                 key={card.label}
                 className="apple-glass-card rounded-2xl p-4"
               >
-                <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                   {card.label}
                 </div>
-                <div className={`mt-2 text-xl font-bold leading-none ${card.tone}`}>
+                <div className={`mt-2 text-2xl font-bold ${card.tone}`}>
                   {card.value}
                 </div>
-                <div className="mt-1.5 text-[11px] text-slate-500">{card.hint}</div>
+                <div className="mt-1 text-xs text-slate-500">{card.hint}</div>
               </div>
             ))}
           </div>

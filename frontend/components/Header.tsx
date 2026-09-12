@@ -65,23 +65,23 @@ export default function Header({ onNavigate }: HeaderProps) {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-18 z-50 apple-glass shadow-[0_10px_30px_rgba(148,163,184,0.14)] border-b border-white/80 px-5 lg:px-6 flex items-center justify-between transition-all">
+    <header className="fixed inset-x-0 top-0 z-50 h-16 apple-glass shadow-[0_10px_30px_rgba(148,163,184,0.14)] border-b border-white/80 px-5 lg:px-6 flex items-center justify-between transition-all">
       {/* Left: AegisOps Logo & Status */}
       <div className="flex items-center gap-4 min-w-0">
-        <div className="flex items-center gap-3 rounded-2xl bg-white/80 border border-slate-200/70 px-3 py-2 shadow-sm backdrop-blur-sm">
-          <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0f2f66] via-apple-blue to-[#66a9ff] text-white shadow-[0_12px_24px_rgba(0,122,255,0.28)] ring-1 ring-white/60">
-            <Icon name="hexagon" className="text-lg" />
+        <div className="flex items-center gap-3 rounded-2xl bg-white/80 border border-slate-200/70 px-3 py-1.5 shadow-sm backdrop-blur-sm">
+          <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-gradient-to-br from-[#0f2f66] via-apple-blue to-[#66a9ff] text-white shadow-[0_10px_20px_rgba(0,122,255,0.24)] ring-1 ring-white/60">
+            <Icon name="hexagon" className="text-base" />
           </div>
           <div className="min-w-0 leading-none">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-[0.72rem] font-semibold tracking-[0.42em] text-slate-700 uppercase">
+            <div className="flex items-baseline gap-1">
+              <span className="text-[0.68rem] font-semibold tracking-[0.34em] text-slate-700 uppercase">
                 Aegis
               </span>
-              <span className="text-xl font-black tracking-[0.24em] text-apple-blue uppercase">
+              <span className="text-lg font-black tracking-[0.2em] text-apple-blue uppercase">
                 OPS
               </span>
             </div>
-            <div className="mt-1 text-[10px] font-semibold tracking-[0.35em] text-slate-500 uppercase">
+            <div className="mt-1 text-[9px] font-semibold tracking-[0.24em] text-slate-500 uppercase">
               GIS // Tactical HUD
             </div>
           </div>
