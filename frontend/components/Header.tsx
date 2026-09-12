@@ -65,7 +65,7 @@ export default function Header({ onNavigate }: HeaderProps) {
   }
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 h-16 apple-glass shadow-[0_10px_30px_rgba(148,163,184,0.14)] border-b border-white/80 px-5 lg:px-6 flex items-center justify-between transition-all">
+    <header className="fixed inset-x-0 top-0 z-50 h-16 bg-white/94 backdrop-blur-2xl shadow-[0_12px_34px_rgba(15,23,42,0.10)] border-b border-slate-200/80 px-5 lg:px-6 flex items-center justify-between transition-all">
       {/* Left: AegisOps Logo & Status */}
       <div className="flex items-center gap-4 min-w-0">
         <div className="flex items-center gap-3 rounded-2xl bg-white/80 border border-slate-200/70 px-3 py-1.5 shadow-sm backdrop-blur-sm">

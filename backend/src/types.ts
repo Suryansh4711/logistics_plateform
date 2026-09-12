@@ -107,7 +107,27 @@ export interface RecommendationResult {
   routeId: string;
   routeName: string;
   score: number;
+  riskScore: number;
+  suitabilityScore: number;
   explanation: string[];
+  factors: Array<{
+    key: string;
+    label: string;
+    weight: number;
+    risk: number;
+    contribution: number;
+    note: string;
+  }>;
+  comparison: Array<{
+    routeId: string;
+    routeName: string;
+    distanceKm: number;
+    distanceVarianceKm: number;
+    delayMinutes: number;
+    blocked: boolean;
+    riskScore: number;
+    suitabilityScore: number;
+  }>;
   generatedAt: string;
 }
 
