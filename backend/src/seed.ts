@@ -244,16 +244,190 @@ export const seedKpi: KpiSnapshot = {
   updatedAt: iso(),
 };
 
-export function recommendRoute(): RecommendationResult {
+/* ═══════════════════════════════════════════════════════════════════════════
+   XAI Scoring Engine — Multi-factor heuristic route recommendation
+   ───────────────────────────────────────────────────────────────────────────
+   Risk Score = w_rain · R_rain + w_slope · R_slope + w_block · R_block + w_vis · R_vis
+
+   Factor weights (SIH brief):
+     rain   : 0.35  — heavy rainfall / precipitation rate
+     slope  : 0.24  — slope / landslide susceptibility index
+     block  : 0.12  — active field incident reports
+     vis    : 0.07  — visibility / black ice risk
+     (remaining 0.22 is implicit base safety margin)
+
+   Suitability = 100 - RiskScore  (higher = safer)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+interface RiskFactor {
+  key: string;
+  label: string;
+  weight: number;
+  risk: number;        // 0–100 factor risk
+  contribution: number; // weight * risk (percentage points)
+  note: string;
+}
+
+interface RouteRiskProfile {
+  routeId: string;
+  routeName: string;
+  distanceKm: number;
+  blocked: boolean;
+  factors: RiskFactor[];
+  riskScore: number;
+  suitabilityScore: number;
+  distanceVarianceKm: number;
+  delayMinutes: number;
+}
+
+function evaluateRouteRisk(route: typeof seedRoutes[0]): RouteRiskProfile {
+  const blocked = route.id === "route-a";
+  const baselineDistanceKm = 66.0; // Route A as baseline
+
+  // ─── Per-route factor risks (0–100 scale) ───
+  let rainRisk: number;
+  let slopeRisk: number;
+  let blockRisk: number;
+  let visRisk: number;
+
+  if (route.id === "route-a") {
+    // Blocked route → maximum risk in blockage + high slope (landslide zone)
+    rainRisk = 72;
+    slopeRisk = 91;
+    blockRisk = 100; // fully blocked
+    visRisk = 45;
+  } else if (route.id === "detour-alpha-7") {
+    // Bypass ridge → low risk overall
+    rainRisk = 22;
+    slopeRisk = 18;
+    blockRisk = 0;   // zero active hazard crossings
+    visRisk = 12;
+  } else {
+    // Corridor Beta (river run) → flood + moderate other risks
+    rainRisk = 68;
+    slopeRisk = 34;
+    blockRisk = 28;
+    visRisk = 31;
+  }
+
+  // ─── Weights (SIH brief) ───
+  const wRain = 0.35;
+  const wSlope = 0.24;
+  const wBlock = 0.12;
+  const wVis = 0.07;
+
+  const factors: RiskFactor[] = [
+    {
+      key: "rain",
+      label: "Heavy rainfall / precipitation rate",
+      weight: wRain,
+      risk: rainRisk,
+      contribution: Number((wRain * rainRisk).toFixed(1)),
+      note: rainRisk > 60
+        ? "Sustained precipitation exceeds safe drainage capacity"
+        : rainRisk > 30
+          ? "Moderate rain — manageable for heavy cargo units"
+          : "Light conditions — no significant precipitation impact",
+    },
+    {
+      key: "slope",
+      label: "Slope / landslide susceptibility index",
+      weight: wSlope,
+      risk: slopeRisk,
+      contribution: Number((wSlope * slopeRisk).toFixed(1)),
+      note: slopeRisk > 70
+        ? "Active slope creep detected — secondary slide imminent"
+        : slopeRisk > 30
+          ? "Moderate gradient — GPS waypoints advise reduced speed"
+          : "Gentle terrain — road surface within safe tolerance",
+    },
+    {
+      key: "block",
+      label: "Active field incident reports",
+      weight: wBlock,
+      risk: blockRisk,
+      contribution: Number((wBlock * blockRisk).toFixed(1)),
+      note: blockRisk === 100
+        ? "Route fully obstructed — rockfall debris 4,200m³"
+        : blockRisk > 0
+          ? "Partial incidents reported — single-lane alternating"
+          : "Zero active hazard crossings on this corridor",
+    },
+    {
+      key: "vis",
+      label: "Visibility / black ice risk",
+      weight: wVis,
+      risk: visRisk,
+      contribution: Number((wVis * visRisk).toFixed(1)),
+      note: visRisk > 40
+        ? "Sub-zero surface producing black ice patches — chain mandate"
+        : visRisk > 20
+          ? "Fog patches — headlamps and convoy spacing advisory"
+          : "Clear visibility — no ice formation detected",
+    },
+  ];
+
+  const riskScore = Number(
+    factors.reduce((sum, f) => sum + f.contribution, 0).toFixed(1)
+  );
+  const suitabilityScore = Number((100 - riskScore).toFixed(1));
+
+  const distanceVarianceKm = Number(
+    (route.distanceKm - baselineDistanceKm).toFixed(1)
+  );
+
+  // Delay estimate: ~1.45 min per extra km for convoy speed ≈ 50 km/h average
+  const delayMinutes = blocked
+    ? 240 // +4h blocked
+    : Math.max(0, Math.round(distanceVarianceKm * 1.45));
+
   return {
-    routeId: "detour-alpha-7",
-    routeName: "Detour Alpha-7 (Bypass Ridge)",
-    score: 96.4,
+    routeId: route.id,
+    routeName: route.name,
+    distanceKm: route.distanceKm,
+    blocked,
+    factors,
+    riskScore,
+    suitabilityScore,
+    distanceVarianceKm,
+    delayMinutes,
+  };
+}
+
+export function recommendRoute(): RecommendationResult {
+  const profiles = seedRoutes.map(evaluateRouteRisk);
+
+  // Select the route with highest suitability among non-blocked
+  const viable = profiles.filter((p) => !p.blocked);
+  const best = viable.sort((a, b) => b.suitabilityScore - a.suitabilityScore)[0]
+    ?? profiles[0]!;
+
+  return {
+    routeId: best.routeId,
+    routeName: best.routeName,
+    score: best.suitabilityScore,
+    riskScore: best.riskScore,
+    suitabilityScore: best.suitabilityScore,
     explanation: [
-      "Shortest safe corridor with zero active hazard crossings.",
-      "Weather impact is manageable for heavy cargo units.",
-      "Fuel burn remains within the convoy's reserve threshold.",
+      `XAI Engine selected ${best.routeName} with a ${best.suitabilityScore}% suitability score.`,
+      `Composite risk score: ${best.riskScore}% (weighted across ${best.factors.length} hazard dimensions).`,
+      best.distanceVarianceKm > 0
+        ? `Distance penalty: +${best.distanceVarianceKm} km (+${best.delayMinutes} min estimated delay) vs baseline Route A (66.0 km).`
+        : "Shortest available corridor with no distance penalty.",
+      `Dominant factor: ${best.factors.sort((a, b) => b.contribution - a.contribution)[0]!.label} (+${best.factors.sort((a, b) => b.contribution - a.contribution)[0]!.contribution}%).`,
+      "Fuel burn remains within the convoy's reserve threshold at projected speed.",
     ],
+    factors: best.factors,
+    comparison: profiles.map((p) => ({
+      routeId: p.routeId,
+      routeName: p.routeName,
+      distanceKm: p.distanceKm,
+      distanceVarianceKm: p.distanceVarianceKm,
+      delayMinutes: p.delayMinutes,
+      blocked: p.blocked,
+      riskScore: p.riskScore,
+      suitabilityScore: p.suitabilityScore,
+    })),
     generatedAt: iso(),
   };
 }
