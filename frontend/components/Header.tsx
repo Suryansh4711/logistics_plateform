@@ -63,34 +63,38 @@ export default function Header({ onNavigate }: HeaderProps) {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 z-50 apple-glass shadow-[0_2px_16px_rgba(148,163,184,0.08)] border-b border-white/80 px-6 flex items-center justify-between transition-all">
+    <header className="fixed top-0 left-0 right-0 h-18 z-50 apple-glass shadow-[0_10px_30px_rgba(148,163,184,0.14)] border-b border-white/80 px-5 lg:px-6 flex items-center justify-between transition-all">
       {/* Left: AegisOps Logo & Status */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-auto flex items-center">
-            <Image
-              alt="AegisOps Tactical Logo"
-              className="h-7 w-auto object-contain"
-              src="https://lh3.googleusercontent.com/aida/AEtjO1X4Ejv6lrN79vkDwO7-IlCw4neOHLOOZJCA8UeuIxEozj0I9lEiWtPNwTKOYDWpLqo7rKOhb0NALQVX-AwIM7-1vhd5OAxBreL5HaJerzA7HpcAsxIWO77a8UVj0IE-D5dV3aiKlTvAiIDb0ealVJv_vX2w3KnJSXblSCCV2q3vlsU1OX6gzZBlUB3QPbgjyZ99SpkVIaT4HMeTgg6g_nClmeH4efv4FQa_MbYdntZ5TfjDQLxuDieUMO8"
-              width={140}
-              height={28}
-              priority
-              unoptimized
-            />
+      <div className="flex items-center gap-4 min-w-0">
+        <div className="flex items-center gap-3 rounded-2xl bg-white/80 border border-slate-200/70 px-3 py-2 shadow-sm backdrop-blur-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0f2f66] via-apple-blue to-[#66a9ff] text-white shadow-[0_12px_24px_rgba(0,122,255,0.28)] ring-1 ring-white/60">
+            <Icon name="hexagon" className="text-lg" />
           </div>
-          <div className="h-4 w-px bg-slate-200" />
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/60">
-            <span className="w-2 h-2 rounded-full bg-apple-green animate-pulse" />
-            <span className="text-[11px] font-semibold text-emerald-700">
-              Operational
-            </span>
+          <div className="min-w-0 leading-none">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-[0.72rem] font-semibold tracking-[0.42em] text-slate-700 uppercase">
+                Aegis
+              </span>
+              <span className="text-xl font-black tracking-[0.24em] text-apple-blue uppercase">
+                OPS
+              </span>
+            </div>
+            <div className="mt-1 text-[10px] font-semibold tracking-[0.35em] text-slate-500 uppercase">
+              GIS // Tactical HUD
+            </div>
           </div>
+        </div>
+        <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/60 shrink-0">
+          <span className="w-2 h-2 rounded-full bg-apple-green animate-pulse" />
+          <span className="text-[11px] font-semibold text-emerald-700">
+            Operational
+          </span>
         </div>
       </div>
 
       {/* Center: Search Capsule & Sat-Link Indicator */}
-      <div className="hidden md:flex items-center gap-3">
-        <div className="relative w-80">
+      <div className="hidden lg:flex items-center gap-3">
+        <div className="relative w-[22rem]">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
             <Icon name="search" className="text-lg" />
           </span>
@@ -105,9 +109,9 @@ export default function Header({ onNavigate }: HeaderProps) {
             ⌘K
           </kbd>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1 bg-white/70 border border-slate-200/70 rounded-full text-xs shadow-2xs">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-white/85 border border-slate-200/70 rounded-full text-xs shadow-2xs">
           <Icon name="satellite_alt" className="text-sm text-apple-blue" />
-          <span className="font-mono text-[11px] text-slate-700 font-medium">
+          <span className="font-mono text-[11px] text-slate-800 font-medium">
             27°19&apos;N 88°36&apos;E
           </span>
           <span className="text-[10px] text-apple-green font-semibold bg-emerald-50 px-1 rounded">
@@ -135,15 +139,10 @@ export default function Header({ onNavigate }: HeaderProps) {
         >
           <Icon name="settings" className="text-xl" />
         </button>
-        <div className="flex items-center gap-2 pl-2 pr-2 py-1 rounded-full bg-white/80 border border-slate-200/80 shadow-2xs hover:bg-white transition-all cursor-pointer">
-          <Image
-            alt="Cmdr. Reid"
-            className="w-7 h-7 rounded-full object-cover ring-2 ring-apple-blue/20"
-            src="https://lh3.googleusercontent.com/aida/AEtjO1VmtF9bQee1nR166R8064qoQNvmzBx5aqr9tjrW9lHUZqVyn5l3xIUw8RbFlV9x5O_8OPh-htwoe_uXeGuByHq3Iy9OPt1iR6oapPcxTEihsL_-rY5ecGrexXjb0h_vFpIQUCi7Ydzx5pLERMXNq41evVvMfrgKqIeHZOWoGvE1hEVl_-ZHP283qJK7I9qW_LzwAwqvw3nKfj2LimJwkTIBJ9bs5uLrD1KUg7nsZ2IajZMntoFz9bHORQ"
-            width={28}
-            height={28}
-            unoptimized
-          />
+        <div className="flex items-center gap-2 pl-2 pr-2 py-1 rounded-full bg-white/90 border border-slate-200/80 shadow-2xs hover:bg-white transition-all cursor-pointer">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-slate-900 via-slate-700 to-apple-blue text-white ring-2 ring-apple-blue/20">
+            <span className="text-[11px] font-black tracking-[0.18em]">AR</span>
+          </div>
           <div className="hidden lg:flex flex-col text-left">
             <span className="text-xs font-semibold text-slate-800 leading-tight">
               Cmdr. A. Reid

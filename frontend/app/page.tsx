@@ -29,8 +29,9 @@ export default function Home() {
     <ToastProvider>
       <div className="min-h-screen relative">
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-          <div className="absolute -top-32 left-1/4 w-[500px] h-[500px] bg-blue-100/40 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 -right-32 w-[550px] h-[550px] bg-indigo-50/40 rounded-full blur-3xl" />
+          <div className="absolute -top-32 left-1/4 w-[540px] h-[540px] bg-blue-100/45 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 -right-32 w-[580px] h-[580px] bg-indigo-50/45 rounded-full blur-3xl" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(0,122,255,0.06),transparent_30%),radial-gradient(circle_at_top_right,rgba(52,199,89,0.06),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(175,82,222,0.045),transparent_24%)]" />
         </div>
 
         <Header onNavigate={setActiveTab} />
@@ -47,6 +48,24 @@ export default function Home() {
           }`}
         >
           <main className="p-6 lg:p-8 max-w-[1680px] mx-auto">
+            {activeTab === "dashboard" && (
+              <div className="mb-6 overflow-hidden rounded-[2rem] border border-white/80 bg-white/75 px-6 py-5 shadow-apple-card backdrop-blur-sm">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-apple-blue">
+                      AegisOps Command Center
+                    </p>
+                    <h2 className="mt-2 text-2xl lg:text-3xl font-black tracking-tight text-slate-900">
+                      Real-time GIS tactical HUD for corridor operations.
+                    </h2>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">
+                    <span className="h-2.5 w-2.5 rounded-full bg-apple-green animate-pulse" />
+                    Backend live sync active
+                  </div>
+                </div>
+              </div>
+            )}
             {TAB_VIEWS[activeTab](setActiveTab)}
           </main>
         </div>
