@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     rootDir: backend
-    buildCommand: npm install && npm run build
+    buildCommand: npm install && node ./node_modules/typescript/bin/tsc -p tsconfig.json
     startCommand: npm start
     healthCheckPath: /health
     envVars:
