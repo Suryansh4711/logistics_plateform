@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import MapWidget from "./MapWidget";
 import type { TabId } from "@/lib/types";
 import { useTelemetrySnapshot } from "@/lib/telemetry-store";
+import { fetchSnapshot, socket } from "@/lib/api";
 
 interface CommandDashboardProps {
   onNavigate: (tab: TabId) => void;
@@ -10,6 +12,29 @@ interface CommandDashboardProps {
 
 export default function CommandDashboard({ onNavigate }: CommandDashboardProps) {
   const snapshot = useTelemetrySnapshot();
+  const [liveData, setLiveData] = useState<any>(null);
+
+  useEffect(() => {
+    // 1. Grab initial state immediately
+    fetchSnapshot().then(setLiveData).catch(console.error);
+
+    // 2. Listen for the real-time drift simulation
+    socket.on("telemetry:update", (data) => {
+      setLiveData(data);
+    });
+
+    return () => {
+      socket.off("telemetry:update");
+    };
+  }, []);
+
+  if (!liveData) {
+    return (
+      <div className="p-8 text-apple-blue animate-pulse text-lg font-semibold">
+        Establishing Sat-Link to Sector 07...
+      </div>
+    );
+  }
 
   return (
     <section className="tab-fade-in">
@@ -163,8 +188,19 @@ export default function CommandDashboard({ onNavigate }: CommandDashboardProps) 
               ))}
             </div>
           </div>
+
+          {/* Live data stream verification panel */}
+          <div className="apple-glass rounded-3xl p-6 shadow-apple-card border border-white">
+            <p className="text-xs font-semibold uppercase tracking-wider text-apple-green">
+              Live Data Stream ✓
+            </p>
+            <pre className="mt-3 max-h-48 overflow-auto text-xs text-green-400 bg-black/90 p-4 rounded-2xl font-mono">
+              {JSON.stringify(liveData.kpi, null, 2)}
+            </pre>
+          </div>
         </div>
       </div>
     </section>
   );
 }
+

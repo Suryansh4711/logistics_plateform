@@ -1,4 +1,5 @@
 import cors from "cors";
+import { pool } from "./db/pool";
 import dotenv from "dotenv";
 import express from "express";
 import { createServer } from "http";
@@ -348,6 +349,15 @@ io.on("connection", (socket) => {
 });
 
 setInterval(updateLiveState, 5000);
+
+pool.query('SELECT NOW()', (err, res) => {
+  if (err) {
+    console.error('❌ Database connection failed:', err.message);
+  } else {
+    // eslint-disable-next-line no-console
+    console.log('✅ Connected to PostgreSQL database at:', res.rows[0].now);
+  }
+});
 
 httpServer.listen(PORT, () => {
   // eslint-disable-next-line no-console
