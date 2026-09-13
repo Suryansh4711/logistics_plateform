@@ -325,17 +325,32 @@ app.get("/api/kpis", (_req, res) => {
   res.json(state.kpi);
 });
 
+let lastGeminiResponse: any = null;
+let lastGeminiCallTime = 0;
+const GEMINI_CACHE_MS = 60000; // 60 seconds to respect daily quota limits
+
 app.post("/api/routes/recommend", async (req, res) => {
   const { routes, hazards, weatherStations } = state;
 
   // --- Try Gemini AI first ---
   if (process.env.GEMINI_API_KEY) {
+    const now = Date.now();
+    if (lastGeminiResponse && now - lastGeminiCallTime < GEMINI_CACHE_MS) {
+      // Return cached AI result to save API quota
+      return res.json(lastGeminiResponse);
+    }
+
     try {
       // eslint-disable-next-line no-console
       console.log("🧠 Calling Gemini AI for route analysis...");
       const aiResult = await evaluateRoutesWithGemini(routes, hazards, weatherStations);
       // eslint-disable-next-line no-console
       console.log(`✅ Gemini recommended: ${aiResult.recommendedRoute.name} (score: ${aiResult.recommendedRoute.aiScore})`);
+      
+      // Cache the result
+      lastGeminiResponse = aiResult;
+      lastGeminiCallTime = now;
+      
       return res.json(aiResult);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);

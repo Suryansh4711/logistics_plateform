@@ -148,7 +148,7 @@ export async function evaluateRoutesWithGemini(
   const prompt = buildPrompt(routes, hazards, weather);
 
   const model = genAI.getGenerativeModel({
-    model: "gemini-3.6-flash",
+    model: "gemini-3.1-pro-preview",
     generationConfig: {
       temperature: 0.3, // Low temperature for consistent analytical output
       maxOutputTokens: 2048,
