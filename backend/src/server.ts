@@ -1,6 +1,6 @@
 import cors from "cors";
 import { pool } from "./db/pool";
-import { evaluateRoutesWithGemini } from "./ai/gemini";
+import { evaluateRouteRisk } from "./ai/gemini";
 import dotenv from "dotenv";
 import express from "express";
 import { createServer } from "http";
@@ -332,8 +332,8 @@ const GEMINI_CACHE_MS = 60000; // 60 seconds to respect daily quota limits
 app.post("/api/routes/recommend", async (req, res) => {
   const { routes, hazards, weatherStations } = state;
 
-  // --- Try Gemini AI first ---
-  if (process.env.GEMINI_API_KEY) {
+  // --- Try OpenRouter AI first ---
+  if (process.env.OPENROUTER_API_KEY) {
     const now = Date.now();
     if (lastGeminiResponse && now - lastGeminiCallTime < GEMINI_CACHE_MS) {
       // Return cached AI result to save API quota
@@ -342,10 +342,30 @@ app.post("/api/routes/recommend", async (req, res) => {
 
     try {
       // eslint-disable-next-line no-console
-      console.log("🧠 Calling Gemini AI for route analysis...");
-      const aiResult = await evaluateRoutesWithGemini(routes, hazards, weatherStations);
+      console.log("🧠 Calling OpenRouter AI for route analysis...");
+      
+      const evaluatedPromises = routes.map(async (route) => {
+        const riskData = await evaluateRouteRisk(route, hazards, weatherStations);
+        return {
+          ...route,
+          aiScore: riskData.aiScore,
+          confidence: riskData.confidence,
+          explanations: riskData.explanations
+        };
+      });
+
+      const evaluated = await Promise.all(evaluatedPromises);
+      evaluated.sort((a, b) => b.aiScore - a.aiScore);
+
+      const aiResult = {
+        recommendedRoute: evaluated[0],
+        alternatives: evaluated.slice(1),
+        generatedAt: new Date().toISOString(),
+        poweredBy: "openrouter"
+      };
+
       // eslint-disable-next-line no-console
-      console.log(`✅ Gemini recommended: ${aiResult.recommendedRoute.name} (score: ${aiResult.recommendedRoute.aiScore})`);
+      console.log(`✅ OpenRouter recommended: ${aiResult.recommendedRoute.name} (score: ${aiResult.recommendedRoute.aiScore})`);
       
       // Cache the result
       lastGeminiResponse = aiResult;
@@ -355,7 +375,7 @@ app.post("/api/routes/recommend", async (req, res) => {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       // eslint-disable-next-line no-console
-      console.warn("⚠️ Gemini AI failed, falling back to heuristic:", message);
+      console.warn("⚠️ OpenRouter AI failed, falling back to heuristic:", message);
     }
   }
 
