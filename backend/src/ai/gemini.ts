@@ -37,7 +37,7 @@ export async function evaluateRoutesRisk(routesData: any[], hazards: any, weathe
         "X-Title": "AegisOps Hackathon" // Optional: for OpenRouter analytics
       },
       body: JSON.stringify({
-        model: "openrouter/free", // Routes automatically to the best available free model
+        model: "google/gemini-2.5-flash", // Using a specific model to track usage properly
         messages: [{ role: "user", content: prompt }]
       })
     });
