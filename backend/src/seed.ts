@@ -6,6 +6,7 @@ import type {
   NotificationRecord,
   RecommendationResult,
   RouteRecord,
+  UserProfileRecord,
   WeatherStationRecord,
 } from "./types";
 
@@ -241,6 +242,37 @@ export const seedKpi: KpiSnapshot = {
   telemetryPingMs: 14,
   networkMbps: 8.4,
   memoryPercent: 34,
+  updatedAt: iso(),
+};
+
+export const seedProfile: UserProfileRecord = {
+  id: "usr-001",
+  name: "Cmdr. A. Reid",
+  callsign: "Sentinel-01",
+  role: "Operations Lead",
+  rank: "Commander",
+  email: "a.reid@aegisops.mil",
+  phone: "+91 98765 43210",
+  unit: "NER Corridor Command",
+  sector: "Sector 07 — Sikkim–Arunachal",
+  clearanceLevel: "Level 4 — Strategic",
+  avatarInitials: "AR",
+  joinedAt: "2024-03-15T00:00:00Z",
+  lastActive: iso(),
+  missionsCompleted: 247,
+  incidentsReported: 142,
+  routesPlanned: 89,
+  fleetManaged: 24,
+  preferences: {
+    darkMode: false,
+    notifications: true,
+    soundAlerts: true,
+    autoRefresh: true,
+    telemetryInterval: 5,
+    mapStyle: "Satellite Hybrid",
+    language: "English",
+    timezone: "Asia/Kolkata (GMT+5:30)",
+  },
   updatedAt: iso(),
 };
 

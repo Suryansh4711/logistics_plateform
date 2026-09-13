@@ -14,6 +14,7 @@ import {
   seedIncidents,
   seedKpi,
   seedNotifications,
+  seedProfile,
   seedRoutes,
   seedWeatherStations,
 } from "./seed";
@@ -25,6 +26,7 @@ import type {
   LiveSnapshot,
   NotificationRecord,
   RouteRecord,
+  UserProfileRecord,
   WeatherStationRecord,
 } from "./types";
 
@@ -100,6 +102,7 @@ const state = {
   incidentReports: [...seedIncidents],
   notifications: [...seedNotifications],
   kpi: { ...seedKpi },
+  profile: { ...seedProfile },
 };
 
 function toSnapshot(): LiveSnapshot {
@@ -111,6 +114,7 @@ function toSnapshot(): LiveSnapshot {
     incidentReports: state.incidentReports,
     notifications: state.notifications,
     kpi: state.kpi,
+    profile: state.profile,
   };
 }
 
@@ -123,6 +127,7 @@ function emitSnapshot() {
   io.emit("reports:update", state.incidentReports);
   io.emit("notifications:update", state.notifications);
   io.emit("kpis:update", state.kpi);
+  io.emit("profile:update", state.profile);
 }
 
 function makeGeoPoint(latitude: number, longitude: number) {
@@ -323,6 +328,36 @@ app.get("/api/notifications", (_req, res) => {
 
 app.get("/api/kpis", (_req, res) => {
   res.json(state.kpi);
+});
+
+// --- User Profile Endpoints ---
+app.get("/api/profile", (_req, res) => {
+  res.json(state.profile);
+});
+
+app.patch("/api/profile", (req, res) => {
+  const updates = req.body || {};
+  const now = new Date().toISOString();
+
+  state.profile = {
+    ...state.profile,
+    ...updates,
+    preferences: {
+      ...state.profile.preferences,
+      ...(updates.preferences || {}),
+    },
+    updatedAt: now,
+    lastActive: now,
+  };
+
+  emitSnapshot();
+  return res.json(state.profile);
+});
+
+app.post("/api/profile/reset", (_req, res) => {
+  state.profile = { ...seedProfile, updatedAt: new Date().toISOString() };
+  emitSnapshot();
+  return res.json(state.profile);
 });
 
 let lastGeminiResponse: any = null;
