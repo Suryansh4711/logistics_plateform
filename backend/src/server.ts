@@ -1,6 +1,6 @@
 import cors from "cors";
 import { pool } from "./db/pool";
-import { evaluateRouteRisk } from "./ai/gemini";
+import { evaluateRoutesRisk } from "./ai/gemini";
 import dotenv from "dotenv";
 import express from "express";
 import { createServer } from "http";
@@ -379,18 +379,19 @@ app.post("/api/routes/recommend", async (req, res) => {
       // eslint-disable-next-line no-console
       console.log("🧠 Calling OpenRouter AI for route analysis...");
       
-      const evaluatedPromises = routes.map(async (route) => {
-        const riskData = await evaluateRouteRisk(route, hazards, weatherStations);
+      const riskData = await evaluateRoutesRisk(routes, hazards, weatherStations);
+      
+      const evaluated = riskData.routes.map((gr: any) => {
+        const original = routes.find((r) => r.id === gr.id) || routes[0];
         return {
-          ...route,
-          aiScore: riskData.aiScore,
-          confidence: riskData.confidence,
-          explanations: riskData.explanations
+          ...original,
+          aiScore: gr.aiScore || 75,
+          confidence: gr.confidence || "75%",
+          explanations: gr.explanations || []
         };
       });
 
-      const evaluated = await Promise.all(evaluatedPromises);
-      evaluated.sort((a, b) => b.aiScore - a.aiScore);
+      evaluated.sort((a: any, b: any) => b.aiScore - a.aiScore);
 
       const aiResult = {
         recommendedRoute: evaluated[0],

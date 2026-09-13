@@ -2,22 +2,27 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-export async function evaluateRouteRisk(routeData: any, hazards: any, weather: any) {
+export async function evaluateRoutesRisk(routesData: any[], hazards: any, weather: any) {
   const prompt = `
     You are an AI logistics analyst for AegisOps. 
-    Analyze this route and return ONLY a valid JSON object. Do not use markdown blocks.
+    Analyze these routes and return ONLY a valid JSON object. Do not use markdown blocks.
     
     Data:
-    - Route: ${JSON.stringify(routeData)}
+    - Routes: ${JSON.stringify(routesData)}
     - Active Hazards: ${JSON.stringify(hazards)}
     - Weather: ${JSON.stringify(weather)}
     
     Output Format:
     {
-      "aiScore": <number 0-100>,
-      "confidence": "<string percentage>",
-      "explanations": [
-        { "factor": "<string>", "impact": "<string negative/positive number>", "detail": "<string>" }
+      "routes": [
+        {
+          "id": "<route id>",
+          "aiScore": <number 0-100>,
+          "confidence": "<string percentage>",
+          "explanations": [
+            { "factor": "<string>", "impact": "<string negative/positive number>", "detail": "<string>" }
+          ]
+        }
       ]
     }
   `;
@@ -51,17 +56,20 @@ export async function evaluateRouteRisk(routeData: any, hazards: any, weather: a
   } catch (error) {
     console.error("OpenRouter evaluation failed, falling back to heuristics:", error);
     
-    // Heuristic Fallback (so the app never crashes during the demo)
+    // Heuristic Fallback for ALL routes
     return {
-      aiScore: 75,
-      confidence: "75.0%",
-      explanations: [
-        {
-          factor: "API Offline",
-          impact: "-25",
-          detail: "Using fallback heuristic calculations due to AI gateway timeout."
-        }
-      ]
+      routes: routesData.map(route => ({
+        id: route.id,
+        aiScore: 75,
+        confidence: "75.0%",
+        explanations: [
+          {
+            factor: "API Offline",
+            impact: "-25",
+            detail: "Using fallback heuristic calculations due to AI gateway timeout."
+          }
+        ]
+      }))
     };
   }
 }
