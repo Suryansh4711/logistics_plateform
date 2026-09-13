@@ -1,5 +1,6 @@
 import cors from "cors";
 import { pool } from "./db/pool";
+import { evaluateRoutesWithGemini } from "./ai/gemini";
 import dotenv from "dotenv";
 import express from "express";
 import { createServer } from "http";
@@ -324,17 +325,31 @@ app.get("/api/kpis", (_req, res) => {
   res.json(state.kpi);
 });
 
-app.post("/api/routes/recommend", (req, res) => {
-  // Pull live data from in-memory state
+app.post("/api/routes/recommend", async (req, res) => {
   const { routes, hazards, weatherStations } = state;
 
-  // The AI Route Evaluator
+  // --- Try Gemini AI first ---
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      // eslint-disable-next-line no-console
+      console.log("🧠 Calling Gemini AI for route analysis...");
+      const aiResult = await evaluateRoutesWithGemini(routes, hazards, weatherStations);
+      // eslint-disable-next-line no-console
+      console.log(`✅ Gemini recommended: ${aiResult.recommendedRoute.name} (score: ${aiResult.recommendedRoute.aiScore})`);
+      return res.json(aiResult);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      // eslint-disable-next-line no-console
+      console.warn("⚠️ Gemini AI failed, falling back to heuristic:", message);
+    }
+  }
+
+  // --- Heuristic fallback (if Gemini key is missing or call fails) ---
   const evaluatedRoutes = routes.map((route) => {
     let score = 100;
     const explanations: Array<{ factor: string; impact: string; detail: string }> = [];
 
-    // 1. Distance & Topology Penalty
-    const baseDistance = 66.0; // Primary Route A distance as baseline
+    const baseDistance = 66.0;
     if (route.distanceKm > baseDistance) {
       const penalty = Math.round((route.distanceKm - baseDistance) * 0.8);
       score -= penalty;
@@ -345,7 +360,6 @@ app.post("/api/routes/recommend", (req, res) => {
       });
     }
 
-    // 2. Weather Penalty (matching weather stations to route sectors)
     const severeWeather = weatherStations.find(
       (w) =>
         w.conditionLabel.toLowerCase().includes("rising") ||
@@ -361,7 +375,6 @@ app.post("/api/routes/recommend", (req, res) => {
       });
     }
 
-    // 3. Freezing / Visibility Penalty for high-altitude routes
     const freezingStation = weatherStations.find(
       (w) =>
         w.conditionLabel.toLowerCase().includes("freez") ||
@@ -377,8 +390,6 @@ app.post("/api/routes/recommend", (req, res) => {
       });
     }
 
-    // 4. Active Hazard Penalty
-    // If route passes through a critical hazard zone (like NH-29 Landslide on Primary Route A)
     const blockingHazard = hazards.find(
       (h) => h.severity === "critical" && route.name.includes("Primary"),
     );
@@ -391,7 +402,6 @@ app.post("/api/routes/recommend", (req, res) => {
       });
     }
 
-    // 5. Moderate hazard proximity penalty
     const nearbyHazards = hazards.filter(
       (h) => h.severity === "high" && route.name.includes("Beta"),
     );
@@ -405,7 +415,6 @@ app.post("/api/routes/recommend", (req, res) => {
       });
     }
 
-    // If no penalties, note it as clean
     if (explanations.length === 0) {
       explanations.push({
         factor: "Clear Corridor",
@@ -426,13 +435,13 @@ app.post("/api/routes/recommend", (req, res) => {
     };
   });
 
-  // Sort by highest score to find the optimal route
   evaluatedRoutes.sort((a, b) => b.aiScore - a.aiScore);
 
   res.json({
     recommendedRoute: evaluatedRoutes[0],
     alternatives: evaluatedRoutes.slice(1),
     generatedAt: new Date().toISOString(),
+    poweredBy: "heuristic-fallback" as const,
   });
 });
 

@@ -31,6 +31,7 @@ export default function CommandDashboard({ onNavigate }: CommandDashboardProps) 
   const snapshot = useTelemetrySnapshot();
   const [liveData, setLiveData] = useState<any>(null);
   const [aiRecommendation, setAiRecommendation] = useState<AiRoute | null>(null);
+  const [aiEngine, setAiEngine] = useState<string>("");
 
   useEffect(() => {
     // 1. Grab initial state immediately
@@ -50,9 +51,13 @@ export default function CommandDashboard({ onNavigate }: CommandDashboardProps) 
   useEffect(() => {
     if (!liveData) return;
 
-    fetch("http://localhost:4000/api/routes/recommend", { method: "POST" })
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+    fetch(`${backendUrl}/api/routes/recommend`, { method: "POST" })
       .then((res) => res.json())
-      .then((data) => setAiRecommendation(data.recommendedRoute))
+      .then((data) => {
+        setAiRecommendation(data.recommendedRoute);
+        setAiEngine(data.poweredBy || "heuristic-fallback");
+      })
       .catch(console.error);
   }, [liveData]);
 
@@ -177,6 +182,9 @@ export default function CommandDashboard({ onNavigate }: CommandDashboardProps) 
                 <p className="text-xs font-semibold uppercase tracking-wider text-apple-green">
                   AI Logistics Intelligence
                 </p>
+                <span className={`ml-auto text-[9px] font-bold uppercase tracking-[0.15em] px-2 py-0.5 rounded-full ${aiEngine === "gemini" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500"}`}>
+                  {aiEngine === "gemini" ? "🧠 Gemini AI" : "⚙️ Heuristic"}
+                </span>
               </div>
 
               <h3 className="text-lg font-bold text-slate-900 mb-1">
