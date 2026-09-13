@@ -141,8 +141,12 @@ export default function Header({ onNavigate }: HeaderProps) {
         >
           <Icon name="settings" className="text-xl" />
         </button>
-        <div className="flex items-center gap-2 pl-2 pr-2 py-1 rounded-full bg-white/90 border border-slate-200/80 shadow-2xs hover:bg-white transition-all cursor-pointer">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-slate-900 via-slate-700 to-apple-blue text-white ring-2 ring-apple-blue/20">
+        <div
+          className="flex items-center gap-2 pl-2 pr-2 py-1 rounded-full bg-white/90 border border-slate-200/80 shadow-2xs hover:bg-white hover:shadow-md transition-all cursor-pointer group"
+          onClick={() => onNavigate("profile")}
+          title="View Profile"
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-slate-900 via-slate-700 to-apple-blue text-white ring-2 ring-apple-blue/20 group-hover:ring-apple-blue/40 transition-all">
             <span className="text-[11px] font-black tracking-[0.18em]">AR</span>
           </div>
           <div className="hidden lg:flex flex-col text-left">

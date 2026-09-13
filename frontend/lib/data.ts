@@ -9,6 +9,7 @@ import type {
   NavItem,
   NotificationAlert,
   RouteOption,
+  UserProfile,
   WeatherStation,
 } from "./types";
 
@@ -57,6 +58,13 @@ export const NAV_ITEMS: NavItem[] = [
     icon: "assignment",
     iconClassName: "text-apple-purple",
     badge: { text: "142", className: "bg-slate-100 text-slate-500" },
+  },
+  {
+    id: "profile",
+    label: "User Profile",
+    icon: "person",
+    iconClassName: "text-apple-indigo",
+    badge: { text: "", className: "" },
   },
 ];
 
@@ -357,4 +365,34 @@ export const AI_RECOMMENDATION = {
   distance: "",
   timePenalty: "",
   safetyScore: "",
+};
+
+export const DEFAULT_USER_PROFILE: UserProfile = {
+  id: "usr-001",
+  name: "Cmdr. A. Reid",
+  callsign: "Sentinel-01",
+  role: "Operations Lead",
+  rank: "Commander",
+  email: "a.reid@aegisops.mil",
+  phone: "+91 98765 43210",
+  unit: "NER Corridor Command",
+  sector: "Sector 07 — Sikkim–Arunachal",
+  clearanceLevel: "Level 4 — Strategic",
+  avatarInitials: "AR",
+  joinedAt: "2024-03-15T00:00:00Z",
+  lastActive: new Date().toISOString(),
+  missionsCompleted: 247,
+  incidentsReported: 142,
+  routesPlanned: 89,
+  fleetManaged: 24,
+  preferences: {
+    darkMode: false,
+    notifications: true,
+    soundAlerts: true,
+    autoRefresh: true,
+    telemetryInterval: 5,
+    mapStyle: "Satellite Hybrid",
+    language: "English",
+    timezone: "Asia/Kolkata (GMT+5:30)",
+  },
 };

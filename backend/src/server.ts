@@ -4,6 +4,9 @@ import dotenv from "dotenv";
 import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import {
   seedFleetUnits,
   seedHazards,
@@ -52,6 +55,33 @@ const app = express();
 app.set("trust proxy", 1);
 app.use(cors({ origin: CORS_ORIGIN }));
 app.use(express.json());
+
+// --- File Upload Setup ---
+const UPLOADS_DIR = path.join(__dirname, "..", "uploads");
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+app.use("/uploads", express.static(UPLOADS_DIR));
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const ext = path.extname(file.originalname);
+    cb(null, `hazard-${uniqueSuffix}${ext}`);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (_req, file, cb) => {
+    const allowed = /jpeg|jpg|png|gif|webp|bmp|heic/;
+    const extOk = allowed.test(path.extname(file.originalname).toLowerCase());
+    const mimeOk = allowed.test(file.mimetype.split("/")[1] || "");
+    cb(null, extOk || mimeOk);
+  },
+});
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -227,6 +257,63 @@ app.get("/api/weather", (_req, res) => {
 
 app.get("/api/reports", (_req, res) => {
   res.json(state.incidentReports);
+});
+
+app.post("/api/reports", (req, res) => {
+  const { location, hazardType, severity, description, coordinates, reportedBy } = req.body;
+
+  if (!location || !hazardType || !severity) {
+    return res.status(400).json({ error: "Missing required fields: location, hazardType, severity" });
+  }
+
+  const reportIndex = state.incidentReports.length + 1;
+  const now = new Date().toISOString();
+
+  const newReport: IncidentReportRecord = {
+    id: `inc-${Date.now()}`,
+    reportId: `INC-2024-${String(reportIndex + 142).padStart(4, "0")}`,
+    timestamp: now,
+    location,
+    hazardType,
+    severity: severity as "Critical" | "High" | "Moderate" | "Low",
+    status: "Open",
+    updatedAt: now,
+  };
+
+  state.incidentReports = [newReport, ...state.incidentReports];
+
+  state.notifications = [
+    {
+      id: `note-${Date.now()}`,
+      title: `New incident report: ${hazardType}`,
+      description: `${reportedBy ?? "Unknown"} filed a ${severity} ${hazardType} incident at ${location}.`,
+      severity: severity === "Critical" ? "critical" : severity === "High" ? "warning" : "info",
+      createdAt: now,
+      readAt: null,
+    },
+    ...state.notifications,
+  ].slice(0, 10);
+
+  emitSnapshot();
+  return res.status(201).json(newReport);
+});
+
+// --- Hazard Photo Upload ---
+app.post("/api/uploads", upload.array("photos", 5), (req, res) => {
+  const files = req.files as Express.Multer.File[] | undefined;
+  if (!files || files.length === 0) {
+    return res.status(400).json({ error: "No files uploaded" });
+  }
+
+  const baseUrl = `${req.protocol}://${req.get("host")}`;
+  const uploaded = files.map((f) => ({
+    filename: f.filename,
+    originalName: f.originalname,
+    size: f.size,
+    url: `${baseUrl}/uploads/${f.filename}`,
+  }));
+
+  return res.status(201).json({ files: uploaded });
 });
 
 app.get("/api/notifications", (_req, res) => {

@@ -10,6 +10,7 @@ import FleetTracking from "@/components/fleet/FleetTracking";
 import RoutePlanning from "@/components/routes/RoutePlanning";
 import WeatherIntel from "@/components/weather/WeatherIntel";
 import IncidentReports from "@/components/reports/IncidentReports";
+import UserProfile from "@/components/profile/UserProfile";
 import type { TabId } from "@/lib/types";
 
 const TAB_VIEWS: Record<TabId, (onNavigate: (tab: TabId) => void) => ReactNode> = {
@@ -19,6 +20,7 @@ const TAB_VIEWS: Record<TabId, (onNavigate: (tab: TabId) => void) => ReactNode> 
   routes: () => <RoutePlanning />,
   weather: () => <WeatherIntel />,
   reports: () => <IncidentReports />,
+  profile: (onNavigate) => <UserProfile onNavigate={onNavigate} />,
 };
 
 export default function Home() {
