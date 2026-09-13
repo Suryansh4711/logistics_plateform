@@ -131,6 +131,37 @@ export interface RecommendationResult {
   generatedAt: string;
 }
 
+export interface UserProfileRecord {
+  id: string;
+  name: string;
+  callsign: string;
+  role: string;
+  rank: string;
+  email: string;
+  phone: string;
+  unit: string;
+  sector: string;
+  clearanceLevel: string;
+  avatarInitials: string;
+  joinedAt: string;
+  lastActive: string;
+  missionsCompleted: number;
+  incidentsReported: number;
+  routesPlanned: number;
+  fleetManaged: number;
+  preferences: {
+    darkMode: boolean;
+    notifications: boolean;
+    soundAlerts: boolean;
+    autoRefresh: boolean;
+    telemetryInterval: number;
+    mapStyle: string;
+    language: string;
+    timezone: string;
+  };
+  updatedAt: string;
+}
+
 export interface LiveSnapshot {
   hazards: HazardRecord[];
   fleetUnits: FleetUnitRecord[];
@@ -139,4 +170,5 @@ export interface LiveSnapshot {
   incidentReports: IncidentReportRecord[];
   notifications: NotificationRecord[];
   kpi: KpiSnapshot;
+  profile?: UserProfileRecord;
 }
